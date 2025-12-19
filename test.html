@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eclipse</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #0a0a0a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #0f0;
+            overflow: hidden;
+        }
+
+        .clock-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+            border-radius: 15px;
+            background: rgba(10, 20, 10, 0.8);
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.4);
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(0, 255, 0, 0.2);
+        }
+
+        .clock-title {
+            margin-bottom: 25px;
+            font-size: 28px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px #0f0;
+            font-weight: 300;
+        }
+
+        .clock {
+            display: flex;
+            gap: 10px;
+            padding: 25px;
+            background: #111;
+            border-radius: 10px;
+            box-shadow: 
+                inset 0 0 20px rgba(0, 0, 0, 0.9),
+                0 0 30px rgba(0, 255, 0, 0.3);
+            transform: perspective(1000px) rotateX(10deg);
+        }
+
+        .digit-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .digit {
+            position: relative;
+            width: 65px;
+            height: 110px;
+            margin-bottom: 10px;
+            /* 倾斜效果 */
+            transform: skew(-10deg);
+        }
+
+        .segment {
+            position: absolute;
+            background: #1a1a1a;
+            border-radius: 8px; /* 圓角半徑 */
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .segment.active {
+            background: #5efdfb;
+            box-shadow: 
+                0 0 15px #4c9f9e,
+                0 0 30px #325d58;
+        }
+
+        .segment-a { top: 3px; left: 8px; width: 48px; height: 10px; transform: skew(10deg); }
+        .segment-b { top: 10px; right: 3px; width: 10px; height: 40px; transform: skew(0deg, 10deg); }
+        .segment-c { bottom: 10px; right: 3px; width: 10px; height: 40px; transform: skew(0deg, -10deg); }
+        .segment-d { bottom: 3px; left: 8px; width: 48px; height: 10px; transform: skew(10deg); }
+        .segment-e { bottom: 10px; left: 3px; width: 10px; height: 40px; transform: skew(0deg, -10deg); }
+        .segment-f { top: 10px; left: 3px; width: 10px; height: 40px; transform: skew(0deg, 10deg); }
+        .segment-g { top: 50%; left: 8px; width: 48px; height: 10px; transform: translateY(-50%) skew(10deg); }
+
+        .segment-a, .segment-d, .segment-g { clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%); }
+        .segment-b, .segment-c, .segment-e, .segment-f { clip-path: polygon(0% 10%, 50% 0%, 100% 10%, 100% 90%, 50% 100%, 0% 90%); }
+
+        .colon {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 110px;
+            margin: 0 5px;
+            transform: skew(-10deg);
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background: #0f0;
+            border-radius: 50%;
+            margin: 10px 0;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        .date-display {
+            margin-top: 20px;
+            font-size: 20px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px #0f0;
+            font-weight: 300;
+        }
+
+        /* 背景效果 */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .grid-line {
+            position: absolute;
+            background: rgba(0, 30, 0, 0.1);
+        }
+
+        .grid-line.horizontal {
+            width: 100%;
+            height: 1px;
+        }
+
+        .grid-line.vertical {
+            width: 1px;
+            height: 100%;
+        }
+
+        .pulse {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 255, 0, 0.2) 0%, transparent 70%);
+            animation: pulse 15s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(10%, 20%) scale(1); opacity: 0.5; }
+            100% { transform: translate(80%, 60%) scale(1.5); opacity: 0.2; }
+        }
+
+        /* 添加一些装饰元素 */
+        .corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 255, 0, 0.5);
+        }
+
+        .corner-tl {
+            top: 10px;
+            left: 10px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-tr {
+            top: 10px;
+            right: 10px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner-bl {
+            bottom: 10px;
+            left: 10px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .corner-br {
+            bottom: 10px;
+            right: 10px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            animation: scan 4s linear infinite;
+            z-index: 2;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .toggle-button {
+            margin-top: 20px;
+            padding: 8px 16px;
+            background: rgba(10, 20, 10, 0.8);
+            border: 1px solid rgba(0, 255, 0, 0.5);
+            border-radius: 5px;
+            color: #0f0;
+            font-family: inherit;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .toggle-button:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="background" id="background"></div>
+    
+    <div class="clock-container">
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+        
+        <!-- <h1 class="clock-title">倾斜荧光管时钟</h1> -->
+        <div class="clock" id="clock">
+            <!-- 数字将通过JavaScript动态生成 -->
+        </div>
+        <div class="date-display" id="dateDisplay"></div>
+        <button id="toggleBtn" class="toggle-button">eclipse</button>
+        <div class="scanline"></div>
+    </div>
+
+    <script>
+        let showTime = true;
+
+        // 创建网格背景
+        function createGridBackground() {
+            const background = document.getElementById('background');
+            
+            // 创建水平线
+            for (let i = 0; i < window.innerHeight; i += 50) {
+                const line = document.createElement('div');
+                line.className = 'grid-line horizontal';
+                line.style.top = `${i}px`;
+                background.appendChild(line);
+            }
+            
+            // 创建垂直线
+            for (let i = 0; i < window.innerWidth; i += 50) {
+                const line = document.createElement('div');
+                line.className = 'grid-line vertical';
+                line.style.left = `${i}px`;
+                background.appendChild(line);
+            }
+            
+            // 添加脉动效果
+            for (let i = 0; i < 5; i++) {
+                const pulse = document.createElement('div');
+                pulse.className = 'pulse';
+                pulse.style.left = `${Math.random() * 100}%`;
+                pulse.style.top = `${Math.random() * 100}%`;
+                pulse.style.animationDelay = `${Math.random() * 5}s`;
+                background.appendChild(pulse);
+            }
+        }
+
+        const digitMap = {
+            '0': [1, 1, 1, 1, 1, 1, 0],
+            '1': [0, 1, 1, 0, 0, 0, 0],
+            '2': [1, 1, 0, 1, 1, 0, 1],
+            '3': [1, 1, 1, 1, 0, 0, 1],
+            '4': [0, 1, 1, 0, 0, 1, 1],
+            '5': [1, 0, 1, 1, 0, 1, 1],
+            '6': [1, 0, 1, 1, 1, 1, 1],
+            '7': [1, 1, 1, 0, 0, 0, 0],
+            '8': [1, 1, 1, 1, 1, 1, 1],
+            '9': [1, 1, 1, 1, 0, 1, 1],
+            '-': [0, 0, 0, 0, 0, 0, 1],
+            'c': [1, 0, 0, 1, 1, 1, 0],
+            'e': [1, 0, 0, 1, 1, 1, 1],
+            'i': [0, 0, 0, 0, 1, 1, 0],
+            'l': [0, 0, 0, 1, 1, 1, 0],
+            'p': [1, 1, 0, 0, 1, 1, 1],
+            's': [1, 0, 1, 1, 0, 1, 1],
+            ' ': [0, 0, 0, 0, 0, 0, 0]
+        };
+
+        // 创建数字显示
+        function createDigitDisplay() {
+            const clock = document.getElementById('clock');
+            clock.innerHTML = '';
+            
+            // 创建8个数字位
+            for (let i = 0; i < 8; i++) {                
+                const digitContainer = document.createElement('div');
+                digitContainer.className = 'digit-container';
+                
+                const digit = document.createElement('div');
+                digit.className = 'digit';
+                
+                // 创建七段数码管
+                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                segments.forEach(segment => {
+                    const seg = document.createElement('div');
+                    seg.className = `segment segment-${segment}`;
+                    digit.appendChild(seg);
+                });
+                
+                digitContainer.appendChild(digit);
+                clock.appendChild(digitContainer);
+            }
+        }
+
+        // 更新时钟显示
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            let timeString;
+            if (showTime) {
+                timeString = `${hours}-${minutes}-${seconds}`;
+            } else {
+                timeString = ` eclipse`;
+            }
+            
+            const digitContainers = document.querySelectorAll('.digit-container');
+
+            // 更新每个数字
+            for (let i = 0; i < 8; i++) {
+                const char = timeString[i];
+                const segments = digitContainers[i].querySelectorAll('.segment');
+                
+                if (digitMap[char]) {
+                    digitMap[char].forEach((isActive, index) => {
+                        if (isActive) {
+                            segments[index].classList.add('active');
+                        } else {
+                            segments[index].classList.remove('active');
+                        }
+                    });
+                }
+            }
+        }
+
+        // 在DOMContentLoaded事件监听器中添加按钮点击事件
+        document.getElementById('toggleBtn').addEventListener('click', function() {
+            showTime = !showTime;
+            updateClock();
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            createGridBackground();
+            createDigitDisplay();
+            updateClock();
+            
+            // 每秒更新一次
+            setInterval(updateClock, 1000);
+        });
+    </script>
+</body>
+</html>
